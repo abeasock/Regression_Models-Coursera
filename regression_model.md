@@ -4,6 +4,8 @@ Amber Beasock
 
 ----------------------------------------------------------------------------------
 
+
+
 ### Effects of manual and automatic transmission on MPG
   
 ### Executive Summary
@@ -383,7 +385,7 @@ Cars with manual transmission get better miles per gallon compared to those with
 boxplot(mtcars$mpg~mtcars$am, xlab="Transmission", ylab="MPG", main="Figure 1: Boxplot", col=c("blue","green"))
 ```
 
-![](./regression_model_files/figure-html/unnamed-chunk-11-1.png) 
+![](Figures/unnamed-chunk-11-1.png) 
 
 **Figure 2 - Pair Graph of Motor Trend Car Road Tests**
 
@@ -391,7 +393,7 @@ boxplot(mtcars$mpg~mtcars$am, xlab="Transmission", ylab="MPG", main="Figure 1: B
 pairs(mpg ~ ., mtcars, panel=panel.smooth, main="Figure 2: Pair Graph")
 ```
 
-![](./regression_model_files/figure-html/unnamed-chunk-12-1.png) 
+![](Figures/unnamed-chunk-12-1.png) 
 
 **Figure 3 - Correlation Plot**
 
@@ -400,7 +402,7 @@ cor2 <- cor(mtcars_num)
 corrplot(cor2, method="color")
 ```
 
-![](./regression_model_files/figure-html/unnamed-chunk-13-1.png) 
+![](Figures/unnamed-chunk-13-1.png) 
 
 **Figure 4 - Residual Plots**
 
@@ -409,4 +411,4 @@ par(mfrow=c(2,2))
 plot(bestModel)
 ```
 
-![](./regression_model_files/figure-html/unnamed-chunk-14-1.png) 
+![](Figures/unnamed-chunk-14-1.png) 
