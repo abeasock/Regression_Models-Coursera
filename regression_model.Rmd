@@ -1,0 +1,151 @@
+---
+title: 'Regression Models Course Project'
+author: "Amber Beasock"
+date: "31 January 2016"
+output:
+  html_document:
+    keep_md: yes
+  pdf_document: default
+---
+
+----------------------------------------------------------------------------------
+
+### Effects of manual and automatic transmission on MPG
+  
+### Executive Summary
+
+In this project, we analyze the `mtcars` (Motor Trend Car Road Tests) data set and explore the relationship between a set of variables and miles per gallon (MPG). The data was extracted from the 1974 *Motor Trend* US Magazine, and comprises fuel consumption and 10 aspects of automobile design and performance for 32 automobiles (1973-74 models). The main focus of the project is to answer the following questions:
+
+- Is an automatic or manual transmission better for MPG
+- Quantify the MPG difference between automatic and manual transmissions
+
+In our analysis, we use exploratory data analysis and regression models to explore the impact of manual transmissons (am=1) and automatic transmissions(am=0) on MPG (Miles/(US) gallon). 
+
+Our analysis concludes that manual transmission is better for MPG. The mean for manual is about 7 mpg more than the mean for automatic transmission. Linear regression analysis shows that manual transmission cars get an average of 2.94 mpg more than automatics when weight and 1/4 mile time are held constant. 
+
+### Data Processing
+```{r}
+library(corrplot)
+```
+
+Load the data set `mtcars`. 
+Use `?mtcars` to view the R documentation on the data set to find out more information. From this we learn the mapping of the variable `am`, 0=automatic, 1=manual. 
+Transform some variables from numeric to factor.
+```{r}
+data(mtcars)
+head(mtcars,3) #Preview of the dataset
+dim(mtcars)
+mtcars_num <- mtcars #Need the variables as numeric to check correlation
+mtcars$cyl <- as.factor(mtcars$cyl)
+mtcars$vs <- as.factor(mtcars$vs)
+mtcars$am <- factor(mtcars$am, labels=c("automatic","manual"))
+mtcars$gear <- as.factor(mtcars$gear)
+mtcars$carb <- as.factor(mtcars$carb)
+```
+
+### Exploratory Data Analysis
+
+The plots created in the exploratory data analysis can be found in the **Appendix: Figures** section at the end. According to the box plot `Figure 1`, manual transmission yields a higher MPG. In `Figure 2`, a pair graph is used to generate scatterplots to show the relationship between variables. A correlation matrix is also used to further examine the correlation between variables. `Figure 3` shows the strength of correlation between all variables.
+```{r}
+x <- mtcars_num[1]
+y <- mtcars_num[2:11] 
+cor(x, y)
+```
+There are stronger correlations between variables: "cyl", "disp", "hp", and "wt". 
+
+### Statistical Inference
+
+A two sample T-test is performed on the two types of transmissions (manual and automatic) to test the null hypothesis, which is the MPG of the automatic and manual transmissions are from the same distrubution. 
+```{r}
+t_test <- t.test(mpg ~ am, data=mtcars)
+t_test$p.value 
+t_test$estimate 
+```
+
+The p-value is `r round(t_test$p.value,4)`, so we reject the null hypothesis. The mean of manual transmission is about 7 MPG more than that of an automatic transmission.
+
+### Regression Analysis
+
+In the first model, all variables are included as predictors of MPG.  
+```{r}
+initModel <- lm(mpg ~ ., data=mtcars)
+summary(initModel) 
+```
+The residual standard error is `r round(summary(initModel)$sigma,3)` on `r df.residual(initModel)` degrees of freedom. The Adjusted R-Squared value is `r round(summary(initModel)$adj.r.squared,4)`, which is interpreted to mean this model can explain about `r round(summary(initModel)$adj.r.squared *100,2)`% of the variance of the MPG. All of the coefficients are above the 0.05 significant level, so we can conclude none of the coefficients are significant. 
+
+Backward elimination can be used to used to find the most statistically significant predictor variables. The `step()` function starts with all the predictors in the model and then drops the one with the largest p-value (least significant). Then the model is re-fitted and this is repeated until only variables that are statistically significant remain.
+```{r}
+bestModel <- step(initModel, k=log(nrow(mtcars))) 
+summary(bestModel)  
+```
+The best model shows that "wt", "qsec", and "am" are statistically significant variables. The Adjusted R-Squared value is `r round(summary(bestModel)$adj.r.squared,4)`, which is interpreted to mean this model can explain about `r round(summary(bestModel)$adj.r.squared *100,2)`% of the variance of the MPG. 
+
+Since the focus of this project is on the relationship between transmission and MPG, the next model will fit transmission as a predictor of MPG.
+```{r}
+mpg_amModel <- lm(mpg ~ am, data=mtcars)
+summary(mpg_amModel) 
+```
+This model shows that a car with an automatic transmission has an average of `r round(summary(mpg_amModel)$coefficient[1,"Estimate"],3)` mpg, and manual transmission increases mpg by `r round(summary(mpg_amModel)$coefficient[2,"Estimate"],3)`. However, this model has an Adjusted R-Squared of `r round(summary(mpg_amModel)$adj.r.squared,4)`, which means the model can only explain about `r round(summary(mpg_amModel)$adj.r.squared *100,2)`% of the variance of the MPG. Other variables should be added in to get a higher Adjusted R-Squared value. 
+
+Lastly, let's compare the model with only "am" as the predictor variable with the best model obtained through backwards elimination.
+```{r}
+anova <- anova(mpg_amModel, bestModel)
+```
+This results in a p-value of $`r anova$"Pr(>F)"[2]`$, which is highly significant. Therefore, we reject the null hypothesis that variables "wt", "qsec", and "am" do not contribute to the prediction of mpg. 
+
+The best fitted model is `lm(formula = mpg ~ wt + qsec + am, data = mtcars)`
+```{r}
+confint(bestModel)
+summary(bestModel)$coef 
+```
+This model shows that when "wt" and "qsec" remain constant, manual transmission cars get an average of `r round(summary(bestModel)$coefficient[4,"Estimate"],2)` more MPG than those with automatic transmission.
+
+### Residual Plots & Diagnostics
+
+Refer to `Figure 4` in the **Appendix: Figures** section for the residual plots. Interpretation of the residual plots:
+
+- The Residuals vs Fitted plot - the points are randomly scattered on the plot confirming the independence condition.
+- The Normal Q-Q plot - the majority of points fall on the line indicating normal distribution of the residuals.
+- The Scale-Location plot - there is a random band around the line with no clear pattern indicating constant variance.
+- The Residual vs Leverage plot - there are some outliers (leverage points) that may indicate values of increased leverage of outliers.
+
+Next, regression diagnostics can be used to further investigate our model. 
+
+The hatvalues() function is used to find values far from the average (usually 2-3x the average) because these may have substantial influence on the regression parameters.
+```{r}
+hv_mean<- mean(hatvalues(bestModel))
+hv <- hatvalues(bestModel)
+tail(sort(hv),3)
+```
+The average hatvalue is `r hv_mean`, and from the above step we get the cars that are about 2 times the average or greater. These are the same cars that we see mentioned on the residual plots.
+
+### Conclusion
+
+Cars with manual transmission get better miles per gallon compared to those with automatic transmission. 
+
+- The t-test shows that manual transmission gets an average of 7 MPG more than cars with automatic transmission.
+- Several linear regression models were fitted to evaluate different aspects that could impact MPG. The best fitted model `lm(formula = mpg ~ wt + qsec + am, data = mtcars)` showed that when "wt" (Weigth (lb/1000)) and "qsec" (1/4 mile time) remain constant, manual transmission cars get an average of `r round(summary(bestModel)$coefficient[4,"Estimate"],2)` more MPG than those with automatic transmission.
+
+### Appendix: Figures
+
+**Figure 1 - Boxplot of MPG vs Transmission**
+```{r fig.width=3.5, fig.height=3.5}
+boxplot(mtcars$mpg~mtcars$am, xlab="Transmission", ylab="MPG", main="Figure 1: Boxplot", col=c("blue","green"))
+```
+
+**Figure 2 - Pair Graph of Motor Trend Car Road Tests**
+```{r fig.width=6, fig.height=6}
+pairs(mpg ~ ., mtcars, panel=panel.smooth, main="Figure 2: Pair Graph")
+```
+
+**Figure 3 - Correlation Plot**
+```{r fig.width=3.5, fig.height=3.5}
+cor2 <- cor(mtcars_num)
+corrplot(cor2, method="color")
+```
+
+**Figure 4 - Residual Plots**
+```{r fig.width=6, fig.height=6}
+par(mfrow=c(2,2))
+plot(bestModel)
+```
